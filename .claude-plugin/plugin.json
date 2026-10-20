@@ -1,0 +1,19 @@
+{
+  "name": "wimbly",
+  "displayName": "Wimbly",
+  "version": "0.1.0",
+  "description": "Connect your Wimbly account and finish onboarding from Claude or Codex.",
+  "author": {
+    "name": "Wimbly",
+    "email": "founders@wimbly.ai",
+    "url": "https://www.wimbly.ai"
+  },
+  "homepage": "https://www.wimbly.ai",
+  "repository": "https://github.com/wimbly-ai/agent-plugins",
+  "license": "MIT",
+  "icon": "./assets/logo.png",
+  "documentationUrl": "https://github.com/wimbly-ai/agent-plugins#readme",
+  "supportUrl": "https://www.wimbly.ai/contact",
+  "privacyPolicyUrl": "https://www.wimbly.ai/legal-pages/privacy-policy",
+  "termsOfServiceUrl": "https://www.wimbly.ai/legal-pages/terms-conditions"
+}

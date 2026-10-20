@@ -1,0 +1,12 @@
+interface:
+  display_name: "Wimbly onboarding"
+  short_description: "Connect Wimbly and resume your account setup"
+  default_prompt: "Use $onboarding to help me finish setting up Wimbly."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "wimbly-setup"
+      description: "Read Wimbly setup progress and the next setup link"
+      transport: "streamable_http"
+      url: "https://mcp.wimbly.ai/mcp/setup"

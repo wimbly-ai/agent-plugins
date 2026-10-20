@@ -1,0 +1,38 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "wimbly",
+  "version": "0.1.0",
+  "description": "Connect your Wimbly account and finish onboarding from Claude or Codex.",
+  "author": {
+    "name": "Wimbly",
+    "email": "founders@wimbly.ai",
+    "url": "https://www.wimbly.ai"
+  },
+  "homepage": "https://www.wimbly.ai",
+  "repository": "https://github.com/wimbly-ai/agent-plugins",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/onboarding/SKILL.md",
+      "interface": {
+        "displayName": "Wimbly",
+        "shortDescription": "Set up Wimbly",
+        "longDescription": "Wimbly is a business-development analyst for partners at professional-services firms. This preview guides account setup: connect your mailbox and LinkedIn, review your background, and confirm your ideal clients. It reads setup progress and links to Wimbly's website for each step. An enrolled Wimbly account is required. This release handles onboarding only; research and outreach happen in Wimbly's mail panel.",
+        "developerName": "Wimbly",
+        "category": "Productivity",
+        "capabilities": ["Check setup progress", "Guide onboarding"],
+        "websiteURL": "https://www.wimbly.ai",
+        "supportURL": "https://www.wimbly.ai/contact",
+        "privacyPolicyURL": "https://www.wimbly.ai/legal-pages/privacy-policy",
+        "termsOfServiceURL": "https://www.wimbly.ai/legal-pages/terms-conditions",
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/composer.png",
+        "defaultPrompt": ["Help me set up Wimbly.", "Continue my Wimbly setup."]
+      },
+      "publication": {
+        "countries": ["US"],
+        "release_notes": "First preview: guided Wimbly onboarding. Live sign-in verification is pending."
+      }
+    }
+  }
+}
