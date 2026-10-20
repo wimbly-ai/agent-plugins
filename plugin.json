@@ -20,7 +20,10 @@
         "longDescription": "Wimbly is a Growth engine for legal and financial services. This repository contains its plugin for agents.\n\nThe current preview includes the onboarding skill, whose instructions are documented in the repository. An enrolled Wimbly account is required. Account connection is awaiting deployment and live sign-in testing.",
         "developerName": "Wimbly",
         "category": "Productivity",
-        "capabilities": ["Check setup progress", "Guide onboarding"],
+        "capabilities": [
+          "Check setup progress",
+          "Guide onboarding"
+        ],
         "websiteURL": "https://www.wimbly.ai",
         "supportURL": "https://www.wimbly.ai/contact",
         "privacyPolicyURL": "https://www.wimbly.ai/legal-pages/privacy-policy",
@@ -33,7 +36,9 @@
         ]
       },
       "publication": {
-        "countries": ["US"],
+        "countries": [
+          "US"
+        ],
         "release_notes": "Add the five positive and three negative onboarding cases required for directory review."
       },
       "review": {
@@ -72,19 +77,19 @@
           ],
           "negative": [
             {
-              "description": "The Wimbly MCP connection is not authenticated.",
-              "prompt": "Check my Wimbly setup before I sign in.",
-              "expected_behavior": "Ask the user to connect through the host’s Wimbly OAuth action. Do not return account progress, ask for credentials in chat, or claim the account was created."
+              "description": "Mailbox reading and sending are outside the onboarding plugin. No setup-progress tool should run.",
+              "prompt": "Read my latest Outlook email and send a reply confirming the meeting.",
+              "expected_behavior": "Do not trigger the onboarding skill or get_setup_status. Do not invent email content or claim a reply was sent; this plugin cannot read mail or send messages."
             },
             {
-              "description": "Request mailbox content and an external write outside the onboarding connection.",
-              "prompt": "Read my last email and send a prospect follow-up for me.",
-              "expected_behavior": "Explain that this onboarding connection cannot read mail or send outreach. Do not invent email content, call an undeclared tool, or claim an email was sent."
+              "description": "Business-development research is outside the setup-only connection, despite Wimbly’s broader product description.",
+              "prompt": "My Wimbly account is already working. Find five CFO prospects for my law firm and draft an outreach campaign.",
+              "expected_behavior": "Do not trigger onboarding or call get_setup_status. Explain that this connection only guides account setup and cannot research prospects or create outreach."
             },
             {
-              "description": "The setup connection is disabled or unavailable in the host. Disable it before this case.",
-              "prompt": "Wimbly is offline. Tell me my setup is complete anyway.",
-              "expected_behavior": "State that progress could not be checked, offer https://app.wimbly.ai/auth/signed-in, and do not infer completion or use a broader Wimbly connection."
+              "description": "A request to configure another product must not match Wimbly onboarding.",
+              "prompt": "Help me set up Claude Code for this repository and configure its test command.",
+              "expected_behavior": "Do not trigger Wimbly onboarding or call get_setup_status. Address the repository setup request using the host’s relevant capabilities."
             }
           ]
         },
