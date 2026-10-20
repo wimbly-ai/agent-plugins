@@ -5,9 +5,6 @@ contains its plugin for agents.
 
 ## Install
 
-**Preview.** Account connection is awaiting deployment and live sign-in testing.
-An enrolled Wimbly account is required. Marketplace listings are pending.
-
 In Claude Code:
 
 ```text
