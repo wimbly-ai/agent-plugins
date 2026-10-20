@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "wimbly",
-  "version": "0.1.0",
-  "description": "Connect your Wimbly account and finish onboarding from Claude or Codex.",
+  "version": "0.1.1",
+  "description": "Wimbly is an AI business-development analyst for partners at professional-services firms.",
   "author": {
     "name": "Wimbly",
     "email": "founders@wimbly.ai",
@@ -16,8 +16,8 @@
       "onboardingSkill": "./skills/onboarding/SKILL.md",
       "interface": {
         "displayName": "Wimbly",
-        "shortDescription": "Set up Wimbly",
-        "longDescription": "Wimbly is a business-development analyst for partners at professional-services firms. This preview guides account setup: connect your mailbox and LinkedIn, review your background, and confirm your ideal clients. It reads setup progress and links to Wimbly's website for each step. An enrolled Wimbly account is required. This release handles onboarding only; research and outreach happen in Wimbly's mail panel.",
+        "shortDescription": "Business-development analyst",
+        "longDescription": "Wimbly is an AI business-development analyst for partners at professional-services firms. This package contains its plugin for Claude and Codex.\n\nThe current preview includes the onboarding skill, whose instructions are documented in the repository. An enrolled Wimbly account is required. Account connection is awaiting deployment and live sign-in testing.",
         "developerName": "Wimbly",
         "category": "Productivity",
         "capabilities": ["Check setup progress", "Guide onboarding"],
@@ -31,7 +31,7 @@
       },
       "publication": {
         "countries": ["US"],
-        "release_notes": "First preview: guided Wimbly onboarding. Live sign-in verification is pending."
+        "release_notes": "Introduce Wimbly generally and link to individual skill instructions. Live account connection remains pending."
       }
     }
   }

@@ -1,12 +1,12 @@
 # Wimbly
 
-Set up Wimbly from Claude or Codex. Connect your account and follow the
-remaining onboarding steps.
-
-**Preview.** Requires an enrolled Wimbly account. The setup service is awaiting
-deployment and live sign-in testing. Marketplace listings are pending.
+Wimbly is an AI business-development analyst for partners at professional-services
+firms. This repository contains its plugin for Claude and Codex.
 
 ## Install
+
+**Preview.** Account connection is awaiting deployment and live sign-in testing.
+An enrolled Wimbly account is required. Marketplace listings are pending.
 
 In Claude Code:
 
@@ -22,13 +22,13 @@ codex plugin marketplace add wimbly-ai/agent-plugins
 codex plugin add wimbly@wimbly
 ```
 
-Connect `wimbly-setup` when prompted. Run `/wimbly:onboarding` in Claude Code
-or `$onboarding` in Codex. You can also ask, “Help me set up Wimbly.”
+When prompted, sign in to your Wimbly account.
 
-The assistant checks progress and links to Wimbly's website to connect your
-mailbox and LinkedIn, review your background, and confirm your ideal clients.
-After each step, return to the conversation to continue. This plugin reads
-setup progress only. Research and outreach happen in Wimbly's mail panel.
+## Skills
+
+| Skill | Claude Code | Codex |
+| --- | --- | --- |
+| [Onboarding](skills/onboarding/SKILL.md) | `/wimbly:onboarding` | `$onboarding` |
 
 [Support and account access](https://www.wimbly.ai/contact) ·
 [Privacy](https://www.wimbly.ai/legal-pages/privacy-policy) ·

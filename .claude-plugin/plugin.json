@@ -1,8 +1,8 @@
 {
   "name": "wimbly",
   "displayName": "Wimbly",
-  "version": "0.1.0",
-  "description": "Connect your Wimbly account and finish onboarding from Claude or Codex.",
+  "version": "0.1.1",
+  "description": "Wimbly is an AI business-development analyst for partners at professional-services firms.",
   "author": {
     "name": "Wimbly",
     "email": "founders@wimbly.ai",

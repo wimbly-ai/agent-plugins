@@ -1,6 +1,6 @@
 {
   "name": "wimbly",
-  "description": "Guided account connection and setup for Wimbly.",
+  "description": "Wimbly's plugin for Claude and Codex.",
   "owner": { "name": "Wimbly" },
   "plugins": [{ "name": "wimbly", "source": "./" }]
 }
