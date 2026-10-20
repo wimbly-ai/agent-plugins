@@ -87,6 +87,20 @@ def validate(root=ROOT):
         extension["onboardingSkill"] == "./skills/onboarding/SKILL.md",
         "Wrong onboarding path",
     )
+    cases = extension["review"]["test_cases"]
+    for kind, count in (("positive", 5), ("negative", 3)):
+        require(len(cases[kind]) == count, f"Expected {count} {kind} review cases")
+        for case in cases[kind]:
+            for field in ("description", "prompt", "expected_behavior"):
+                require(
+                    isinstance(case.get(field), str) and case[field].strip(),
+                    f"Review case needs {field}",
+                )
+            if kind == "positive":
+                require(
+                    case.get("tools_triggered") == "get_setup_status",
+                    "Onboarding review cases must use get_setup_status",
+                )
     listing = extension["interface"]
     for field, limit in (
         ("displayName", 30),
