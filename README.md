@@ -19,7 +19,8 @@ codex plugin marketplace add wimbly-ai/agent-plugins
 codex plugin add wimbly@wimbly
 ```
 
-When prompted, sign in to your Wimbly account.
+After installing, run `/wimbly:onboarding` in Claude Code or `$onboarding` in
+Codex. Sign in to your Wimbly account when prompted.
 
 ## Skills
 
