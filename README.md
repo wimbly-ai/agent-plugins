@@ -1,7 +1,7 @@
 # Wimbly
 
-Wimbly is an AI business-development analyst for partners at professional-services
-firms. This repository contains its plugin for Claude and Codex.
+Wimbly is a Growth engine for legal and financial services. This repository
+contains its plugin for agents.
 
 ## Install
 

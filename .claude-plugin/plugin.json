@@ -1,8 +1,8 @@
 {
   "name": "wimbly",
   "displayName": "Wimbly",
-  "version": "0.1.1",
-  "description": "Wimbly is an AI business-development analyst for partners at professional-services firms.",
+  "version": "0.1.2",
+  "description": "Wimbly is a Growth engine for legal and financial services.",
   "author": {
     "name": "Wimbly",
     "email": "founders@wimbly.ai",
