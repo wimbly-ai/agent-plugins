@@ -72,16 +72,6 @@ def validate(root=ROOT):
     for name, transport in (("mcp.json", "streamable-http"), (".mcp.json", "http")):
         config = read(name)
         server = {"type": transport, "url": SETUP_URL}
-        if name == "mcp.json":
-            server["extensions"] = {
-                "com.openai": {
-                    "auth": {
-                        "type": "oauth",
-                        "client": {"mode": "cimd"},
-                        "resource": SETUP_URL,
-                    }
-                }
-            }
         require(
             config["mcpServers"] == {"wimbly-setup": server},
             f"{name} must expose only the setup resource, without credentials",

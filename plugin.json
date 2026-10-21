@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "wimbly",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Wimbly is a Growth engine for legal and financial services.",
   "author": {
     "name": "Wimbly",
