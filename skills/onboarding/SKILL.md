@@ -28,6 +28,11 @@ only a setup state returned by a successful tool call.
 
 ## Guide the next step
 
+Every onboarding step is required. Never offer to skip a pending step or do
+it later. If the partner asks for something else before setup is complete,
+explain that setup comes first and show the "Set up Wimbly" card, or the
+current step's link if the host cannot show cards.
+
 Use the returned `step` and `nextUrl`. Present the link and the one action
 the partner needs to take. Open it with the host's normal link-opening
 capability when available; otherwise show a clickable link.
