@@ -2,10 +2,23 @@
 """Build a reproducible release ZIP from the validated, explicit file list."""
 
 import argparse
+import json
+import re
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 from validate import FILES, ROOT, validate
+
+
+def openai_app_id(value):
+    if not re.fullmatch(
+        r"(?:asdk_app_|connector_|templated_apps_)[A-Za-z0-9][A-Za-z0-9_-]*", value
+    ):
+        raise argparse.ArgumentTypeError(
+            "Use a registered asdk_app_, connector_, or templated_apps_ ID, "
+            "not a plugin_ UI route ID"
+        )
+    return value
 
 
 def main():
@@ -13,33 +26,55 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        help="ZIP destination (default: dist/wimbly-<version>.zip)",
+        help="ZIP destination (default: dist/wimbly-<version>[-chatgpt].zip)",
     )
     parser.add_argument(
         "--tag", help="Require a release tag matching the manifest version"
+    )
+    parser.add_argument(
+        "--openai-app-id",
+        type=openai_app_id,
+        help="Build a portable-only ChatGPT ZIP bound to this registered MCP server",
     )
     args = parser.parse_args()
     version = validate()
     if args.tag is not None and args.tag != f"v{version}":
         raise ValueError(f"Tag {args.tag} does not match manifest version {version}")
-    destination = (args.output or ROOT / "dist" / f"wimbly-{version}.zip").resolve()
+    suffix = "-chatgpt" if args.openai_app_id else ""
+    destination = (
+        args.output or ROOT / "dist" / f"wimbly-{version}{suffix}.zip"
+    ).resolve()
     if destination.suffix != ".zip" or destination in (ROOT / name for name in FILES):
         raise ValueError("Choose a .zip destination outside the release file list")
+    files = {name: (ROOT / name).read_bytes() for name in FILES}
+    if args.openai_app_id:
+        files = {
+            name: data
+            for name, data in files.items()
+            if name in ("plugin.json", "mcp.json", "README.md", "LICENSE")
+            or name.startswith(("skills/", "assets/"))
+        }
+        plugin = json.loads(files["plugin.json"])
+        plugin["extensions"]["com.openai"]["apps"] = "./.app.json"
+        files["plugin.json"] = (json.dumps(plugin, indent=2) + "\n").encode("utf-8")
+        mapping = {"apps": {"wimbly": {"id": args.openai_app_id, "required": True}}}
+        files[".app.json"] = (json.dumps(mapping, indent=2) + "\n").encode("utf-8")
     destination.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(
         destination, "w", compression=ZIP_DEFLATED, compresslevel=9
     ) as archive:
-        for name in sorted(FILES):
-            info = ZipInfo(f"wimbly/{name}", date_time=(1980, 1, 1, 0, 0, 0))
+        for name in sorted(files):
+            archive_name = name if args.openai_app_id else f"wimbly/{name}"
+            info = ZipInfo(archive_name, date_time=(1980, 1, 1, 0, 0, 0))
             info.create_system = 3
             info.external_attr = 0o100644 << 16
             archive.writestr(
                 info,
-                (ROOT / name).read_bytes(),
+                files[name],
                 compress_type=ZIP_DEFLATED,
                 compresslevel=9,
             )
-    print(f"Packaged Wimbly {version}: {len(FILES)} files, {destination}")
+    print(f"Packaged Wimbly {version}: {len(files)} files, {destination}")
 
 
 if __name__ == "__main__":
