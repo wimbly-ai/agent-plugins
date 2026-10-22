@@ -20,7 +20,8 @@ codex plugin add wimbly@wimbly
 ```
 
 After installing, run `/wimbly:onboarding` in Claude Code or `$onboarding` in
-Codex. Sign in to your Wimbly account when prompted.
+Codex. Sign in to your Wimbly account when prompted. The same connection
+provides Wimbly tools after onboarding.
 
 ## Skills
 

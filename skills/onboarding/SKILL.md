@@ -5,15 +5,17 @@ description: Guide Wimbly onboarding or repair a connection by checking setup pr
 
 # Wimbly onboarding
 
-Guide the partner to a working Wimbly account, one step at a time. This plugin
+Guide the partner to a working Wimbly account, one step at a time. This skill
 checks setup progress; the partner completes connections and profile reviews
 on Wimbly's website. Wimbly accounts are currently enrolled by its team.
 
 ## Connect and read progress
 
-Use the bundled `wimbly-setup` connection and call `get_setup_status` with
-empty arguments. If the connection needs authentication, guide the partner
-to the host's Connect or sign-in action and let Wimbly's OAuth flow finish.
+Use the bundled `wimbly` connection and call `get_setup_status` with empty
+arguments. During onboarding, use this tool to read progress and the website
+to complete setup steps. If the connection needs authentication, guide the
+partner to the host's Connect or sign-in action and let Wimbly's OAuth flow
+finish.
 An email code belongs on Wimbly's sign-in page, never in this conversation.
 
 If the account is not enrolled, explain that enrollment is required and link
@@ -21,8 +23,8 @@ to https://www.wimbly.ai/contact for contacting the Wimbly team. Do not claim to
 created an account, requested access, or sent a message.
 
 If the tool is unavailable or fails, say progress could not be checked and
-offer https://app.wimbly.ai/auth/signed-in to continue on the website. Do not
-guess a setup state or use a broader Wimbly connection as a fallback.
+offer https://app.wimbly.ai/auth/signed-in to continue on the website. Report
+only a setup state returned by a successful tool call.
 
 ## Guide the next step
 
@@ -48,5 +50,6 @@ fresh tool result establishes completion. A reopened conversation starts
 with the same read, so no local checklist or conversation memory is needed.
 Do not poll while the partner is completing a page.
 
-Finish when the server returns `ready`. This release offers setup only;
-explain that research and outreach work happens in Wimbly's mail panel.
+Finish when the server returns `ready`. The same connection provides
+Wimbly's other available tools for the partner's later requests. Completing
+onboarding starts no research, mailbox read or outreach on its own.

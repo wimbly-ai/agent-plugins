@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-SETUP_URL = "https://mcp.wimbly.ai/mcp/setup"
+MCP_URL = "https://mcp.wimbly.ai/mcp"
 FILES = (
     "plugin.json",
     "mcp.json",
@@ -71,10 +71,10 @@ def validate(root=ROOT):
 
     for name, transport in (("mcp.json", "streamable-http"), (".mcp.json", "http")):
         config = read(name)
-        server = {"type": transport, "url": SETUP_URL}
+        server = {"type": transport, "url": MCP_URL}
         require(
-            config["mcpServers"] == {"wimbly-setup": server},
-            f"{name} must expose only the setup resource, without credentials",
+            config["mcpServers"] == {"wimbly": server},
+            f"{name} must use the Wimbly MCP resource, without credentials",
         )
     require(
         read("mcp.json")["$schema"]
@@ -164,7 +164,7 @@ def validate(root=ROOT):
         encoding="utf-8"
     )
     urls = re.findall(r'^\s+url: "([^"]+)"$', metadata, re.MULTILINE)
-    require(urls == [SETUP_URL], "Skill dependency must use the setup resource")
+    require(urls == [MCP_URL], "Skill dependency must use the Wimbly MCP resource")
     return plugin["version"]
 
 
