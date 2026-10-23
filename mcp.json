@@ -3,7 +3,18 @@
   "mcpServers": {
     "wimbly": {
       "type": "streamable-http",
-      "url": "https://mcp.wimbly.ai/mcp"
+      "url": "https://mcp.wimbly.ai/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "cimd"
+            },
+            "resource": "https://mcp.wimbly.ai/mcp"
+          }
+        }
+      }
     }
   }
 }

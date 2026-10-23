@@ -75,9 +75,20 @@ def validate(root=ROOT):
     for name, transport in (("mcp.json", "streamable-http"), (".mcp.json", "http")):
         config = read(name)
         server = {"type": transport, "url": MCP_URL}
+        if name == "mcp.json":
+            server["extensions"] = {
+                "com.openai": {
+                    "auth": {
+                        "type": "oauth",
+                        "client": {"mode": "cimd"},
+                        "resource": MCP_URL,
+                    }
+                }
+            }
         require(
             config["mcpServers"] == {"wimbly": server},
-            f"{name} must use the Wimbly MCP resource, without credentials",
+            f"{name} must use the Wimbly MCP resource and declared authentication, "
+            "without credentials",
         )
     require(
         read("mcp.json")["$schema"]

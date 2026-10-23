@@ -61,6 +61,11 @@ ChatGPT expects one plugin manifest, so this archive places portable files at it
 root and omits Claude compatibility files and marketplace catalogs. The default
 build remains the universal archive for Claude and native clients.
 
+The portable `mcp.json` declares OAuth with CIMD client registration for OpenAI
+and the canonical Wimbly resource. Endpoints are discovered from the server;
+credentials do not belong in the package. Keep this declaration when editing
+connection metadata, following [OpenAI's authentication guidance](https://developers.openai.com/plugins/build/plugins#configure-mcp-authentication).
+
 Installation follows `main`; released ZIPs are available under
 [Releases](https://github.com/wimbly-ai/agent-plugins/releases). To update, run
 `claude plugin update wimbly@wimbly` or
