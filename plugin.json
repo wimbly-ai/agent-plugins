@@ -29,7 +29,8 @@
         "privacyPolicyURL": "https://www.wimbly.ai/legal-pages/privacy-policy",
         "termsOfServiceURL": "https://www.wimbly.ai/legal-pages/terms-conditions",
         "logo": "./assets/logo.png",
-        "composerIcon": "./assets/composer.png",
+        "composerIcon": "./assets/composer.svg",
+        "composerIconDark": "./assets/composer-dark.svg",
         "defaultPrompt": [
           "Help me set up Wimbly.",
           "Continue my Wimbly setup."
