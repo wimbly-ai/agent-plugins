@@ -4,7 +4,7 @@
   "version": "0.1.5",
   "description": "Wimbly is a Growth engine for legal and financial services.",
   "author": {
-    "name": "Wimbly",
+    "name": "Wimbly, Inc.",
     "email": "founders@wimbly.ai",
     "url": "https://www.wimbly.ai"
   },
@@ -18,7 +18,7 @@
         "displayName": "Wimbly",
         "shortDescription": "Growth engine",
         "longDescription": "Wimbly is a Growth engine for legal and financial services. This repository contains its plugin for agents.\n\nConnect your Wimbly account to use its tools from your agent. The onboarding skill checks setup progress and guides the remaining steps on Wimbly’s website.",
-        "developerName": "Wimbly",
+        "developerName": "Wimbly, Inc.",
         "category": "Productivity",
         "capabilities": [
           "Read",
