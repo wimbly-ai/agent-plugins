@@ -6,7 +6,7 @@ interface:
 dependencies:
   tools:
     - type: "mcp"
-      value: "wimbly-setup"
+      value: "wimbly"
       description: "Read Wimbly setup progress and the next setup link"
       transport: "streamable_http"
-      url: "https://mcp.wimbly.ai/mcp/setup"
+      url: "https://mcp.wimbly.ai/mcp"

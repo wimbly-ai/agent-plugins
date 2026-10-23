@@ -2,13 +2,15 @@
 """Check the Wimbly package without fetching dependencies or calling the service."""
 
 import json
+import math
 import re
 import struct
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-SETUP_URL = "https://mcp.wimbly.ai/mcp/setup"
+MCP_URL = "https://mcp.wimbly.ai/mcp"
 FILES = (
     "plugin.json",
     "mcp.json",
@@ -19,7 +21,8 @@ FILES = (
     "skills/onboarding/SKILL.md",
     "skills/onboarding/agents/openai.yaml",
     "assets/logo.png",
-    "assets/composer.png",
+    "assets/composer.svg",
+    "assets/composer-dark.svg",
     "README.md",
     "LICENSE",
 )
@@ -71,20 +74,10 @@ def validate(root=ROOT):
 
     for name, transport in (("mcp.json", "streamable-http"), (".mcp.json", "http")):
         config = read(name)
-        server = {"type": transport, "url": SETUP_URL}
-        if name == "mcp.json":
-            server["extensions"] = {
-                "com.openai": {
-                    "auth": {
-                        "type": "oauth",
-                        "client": {"mode": "cimd"},
-                        "resource": SETUP_URL,
-                    }
-                }
-            }
+        server = {"type": transport, "url": MCP_URL}
         require(
-            config["mcpServers"] == {"wimbly-setup": server},
-            f"{name} must expose only the setup resource, without credentials",
+            config["mcpServers"] == {"wimbly": server},
+            f"{name} must use the Wimbly MCP resource, without credentials",
         )
     require(
         read("mcp.json")["$schema"]
@@ -136,15 +129,27 @@ def validate(root=ROOT):
     ):
         require(listing[field] == claude[other], f"Listing links disagree on {field}")
     require(listing["logo"] == claude["icon"], "Listing icons disagree")
-    for field in ("logo", "composerIcon"):
+    for field in ("logo", "composerIcon", "composerIconDark"):
         name = listing[field]
         require(name.startswith("./") and name[2:] in FILES, f"Unpackaged {field}")
         data = (root / name).read_bytes()
-        require(
-            data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24,
-            f"Invalid PNG: {name}",
-        )
-        width, height = struct.unpack(">II", data[16:24])
+        if name.endswith(".svg"):
+            svg = ET.fromstring(data)
+            require(
+                svg.tag == "{http://www.w3.org/2000/svg}svg", f"Invalid SVG: {name}"
+            )
+            box = [float(value) for value in svg.attrib["viewBox"].split()]
+            require(
+                len(box) == 4 and all(map(math.isfinite, box)),
+                f"Invalid SVG viewBox: {name}",
+            )
+            width, height = box[2:]
+        else:
+            require(
+                data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24,
+                f"Invalid PNG: {name}",
+            )
+            width, height = struct.unpack(">II", data[16:24])
         require(
             48 <= width == height <= 4096 and len(data) <= 5 * 1024 * 1024,
             f"Invalid icon dimensions or size: {name}",
@@ -174,13 +179,13 @@ def validate(root=ROOT):
         encoding="utf-8"
     )
     urls = re.findall(r'^\s+url: "([^"]+)"$', metadata, re.MULTILINE)
-    require(urls == [SETUP_URL], "Skill dependency must use the setup resource")
+    require(urls == [MCP_URL], "Skill dependency must use the Wimbly MCP resource")
     return plugin["version"]
 
 
 if __name__ == "__main__":
     try:
         version = validate()
-    except (OSError, ValueError, KeyError, TypeError) as error:
+    except (OSError, ValueError, KeyError, TypeError, ET.ParseError) as error:
         raise SystemExit(f"Validation failed: {error}")
     print(f"Validated Wimbly {version}: {len(FILES)} release files")
