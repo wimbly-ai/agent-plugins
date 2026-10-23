@@ -1,6 +1,6 @@
 {
   "name": "wimbly",
   "description": "Wimbly's plugin for agents.",
-  "owner": { "name": "Wimbly" },
+  "owner": { "name": "Wimbly, Inc." },
   "plugins": [{ "name": "wimbly", "source": "./" }]
 }
