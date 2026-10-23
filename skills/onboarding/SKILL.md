@@ -5,56 +5,58 @@ description: Guide Wimbly onboarding or repair a connection by checking setup pr
 
 # Wimbly onboarding
 
-Guide the partner to a working Wimbly account, one step at a time. This skill
-checks setup progress; the partner completes connections and profile reviews
-on Wimbly's website. Wimbly accounts are currently enrolled by its team.
+Read progress through the bundled `wimbly` connection. The partner completes
+connections and reviews on Wimbly's pages. Wimbly accounts are enrolled by its team.
 
-## Connect and read progress
+## Read progress
 
-Use the bundled `wimbly` connection and call `get_setup_status` with empty
-arguments. During onboarding, use this tool to read progress and the website
-to complete setup steps. If the connection needs authentication, guide the
-partner to the host's Connect or sign-in action and let Wimbly's OAuth flow
-finish.
-An email code belongs on Wimbly's sign-in page, never in this conversation.
+Call `get_setup_status` with `{}`. If authentication is needed, use the host's
+Connect or sign-in action and let Wimbly's OAuth flow finish. Email codes,
+passwords and security challenges belong on the sign-in page.
 
-If the account is not enrolled, explain that enrollment is required and link
-to https://www.wimbly.ai/contact for contacting the Wimbly team. Do not claim to have
-created an account, requested access, or sent a message.
+For an unenrolled account, explain that enrollment is required and link to
+https://www.wimbly.ai/contact. Report only what a successful tool call establishes.
+If the tool is unavailable or fails, say progress could not be checked and offer
+https://app.wimbly.ai/auth/signed-in. This skill creates no account or access request.
 
-If the tool is unavailable or fails, say progress could not be checked and
-offer https://app.wimbly.ai/auth/signed-in to continue on the website. Report
-only a setup state returned by a successful tool call.
+## Show the current step
 
-## Guide the next step
+Every initial step is required. Never offer Skip, Not now, or to finish a
+required step later. The card can stay open while the partner chats. When
+incomplete setup prevents their requested Wimbly work, explain that setup comes
+first and keep the current step available.
 
-Every onboarding step is required. Never offer to skip a pending step or do
-it later. If the partner asks for something else before setup is complete,
-explain that setup comes first and show the "Set up Wimbly" card, or the
-current step's link if the host cannot show cards.
+In a host that renders the tool's MCP App, let the card hold the checklist and
+current action. On a fresh setup, say only: “Four short steps. First, your mailbox.”
+For a resumed setup, use one short line naming the current step. Avoid repeating
+the card's steps or posting another checklist. The card opens Wimbly's pages,
+checks progress in place and updates the conversation when a step finishes.
+Only an actual rendered card establishes that this host supports the UI.
 
-Use the returned `step` and `nextUrl`. Present the link and the one action
-the partner needs to take. Open it with the host's normal link-opening
-capability when available; otherwise show a clickable link.
+In native Codex, Claude Code, or a host that does not render the card, use the
+returned `step` and `nextUrl` to explain one action and show a clickable trusted
+link. Use the host's normal link-opening action when available.
 
-| Step | What to explain |
+| Step | Text and link fallback |
 | --- | --- |
-| `connect_mailbox` | Connect Gmail or Outlook on Wimbly's page. The mailbox's provider asks for permission there. If firm administrator approval is required, the partner follows the page's instructions. |
-| `connect_linkedin` | Choose one of the methods Wimbly's page offers. Passwords, session details and security challenges stay on that page. The browser-session method requires the mail extension; the credentials and archive paths do not. An archive request can complete this step before the archive arrives. |
-| `about_you` | Review or correct personal background on Wimbly's About you page, then press Continue. |
-| `icp` | Review the kinds of clients the partner wants to win work from on Wimbly's ideal-client page, then press Continue. This connection cannot save or edit a profile. |
-| `ready` | Confirm that setup is complete. The mail panel is optional, and its installation is available on the account page. Setup completion does not establish that mailbox or LinkedIn history has finished importing. |
+| `connect_mailbox` | Connect Gmail or Outlook on Wimbly's page. Choose the provider and start consent there; the link itself does not start consent. Follow any firm administrator approval instructions on that page. |
+| `connect_linkedin` | Choose a method offered on Wimbly's page. Browser-session connection requires the mail extension; credentials and archive paths do not. An export request completes this setup step before the file arrives. If the server records a request: “LinkedIn export requested. Upload the ZIP in Wimbly when it's ready.” An archive already ready still needs uploading. Report import completion only when the server explicitly records it; an active connection alone does not establish completed history import. |
+| `about_you` | Review or correct your background on Wimbly's About you page, then press Continue. |
+| `icp` | Review the kinds of clients you want to win on Wimbly's ideal-client page, then press Continue. This skill guides the review; it does not save profile edits. |
+| `ready` | Setup is complete. The mail panel is optional on the account page. Setup completion establishes neither completed history import nor automatic ingestion of a requested LinkedIn export. |
 
-When `setupComplete` is true but `step` is earlier than `ready`, explain the
-specific repair or review needed without calling the account new or
-restarting the whole onboarding journey. Skip completed steps.
+For `setupComplete: true` with an earlier `step`, raise the specific repair only
+when the partner's request needs that connection. Use the repair card or its
+returned link without step numbers or restarting completed onboarding. A request
+that needs no lapsed connection can continue.
 
-After a browser handoff, wait for the partner to return or say they finished,
-then call `get_setup_status` again. Their report triggers a check; only a
-fresh tool result establishes completion. A reopened conversation starts
-with the same read, so no local checklist or conversation memory is needed.
-Do not poll while the partner is completing a page.
+## Recheck after a handoff
 
-Finish when the server returns `ready`. The same connection provides
-Wimbly's other available tools for the partner's later requests. Completing
-onboarding starts no research, mailbox read or outreach on its own.
+In text hosts, wait for the partner to return or say they finished, then call
+`get_setup_status` again. Their report triggers a check; a fresh tool result
+establishes completion. Start reopened conversations with that same read.
+The assistant does not run a polling loop: the rendered card owns its bounded
+five-second checks for up to two minutes after a person starts a connection.
+
+Finish at `ready`. The same connection provides Wimbly's later tools; completing
+setup starts no research, mailbox read or outreach on its own.
