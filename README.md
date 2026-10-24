@@ -57,6 +57,56 @@ declares the canonical OAuth MCP server, and contains no registered-app mapping.
 `release.json` records the source commit and the remaining provider actions; it
 does not report a submission or publication as completed.
 
+### Preview before sending
+
+After these workflows merge to `main`, open this repository's **Actions →
+Preview plugin release → Run workflow**. Select the branch to inspect, or enter
+an existing version tag such as `v0.1.5`. That source must contain the preview
+scripts. The workflow uses read-only repository permissions, runs tests and
+public discovery checks, and uploads a **wimbly-release-preview** artifact.
+Download it, extract it, and open **review.html** in your browser.
+
+The page shows the exact package's display name, developer, version, main icon,
+light/dark composer icons, starter prompts, onboarding skill, review cases,
+archive file lists and checksums. `review.json` contains the same information as
+data. PR validation also includes these files in its **wimbly-plugin** artifact.
+This is a package review page, not a screenshot of either host. Previewing does
+not create a release, advance Claude's tracked branch, submit a plugin or deploy
+the backend. Marking a GitHub release as full remains the separate release action.
+
+For the same preview locally:
+
+```sh
+python3 scripts/preview_release.py --check-live
+open dist/review.html
+```
+
+**Tools come from the server, not the ZIP.** Their names, titles, descriptions,
+schemas and annotation hints require authenticated discovery and can depend on
+the signed-in account's enabled capabilities. The GitHub workflow has no Wimbly
+credentials and explicitly marks the live inventory as not captured. The
+onboarding review cases name `get_setup_status`; that is not a full tool list.
+
+Inspect the exact live inventory before submission:
+
+1. In the existing OpenAI publisher draft, open **MCPs → Wimbly**, connect if
+   needed, and inspect the discovered tools. Alternatively use a private custom
+   MCP/plugin installation in ChatGPT or the existing Wimbly connector in Claude.
+2. For the raw metadata, launch [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector)
+   with `npx @modelcontextprotocol/inspector --server-url https://mcp.wimbly.ai/mcp --transport http`.
+   Sign in, then use **Tools → List Tools**. Listing metadata does not invoke a
+   tool. Review each technical name, display title, description, input schema
+   and declared read/write, destructive and external-world hints.
+3. Optionally save only the complete `tools/list` response as JSON and run
+   `python3 scripts/preview_release.py --tools-json /tmp/wimbly-tools.json`.
+   The page then includes that inventory. It selects tool definitions only,
+   ignores unrelated capture fields and labels the snapshot as supplied,
+   not independently verified. Do not use an auth/session export or commit
+   credentials. Capture every page when the server supplies `nextCursor`.
+
+See [OpenAI's testing and metadata-refresh instructions](https://developers.openai.com/plugins/deploy/connect-chatgpt).
+Connecting or privately installing is separate from submitting for public review.
+
 ### Release to the directories
 
 1. Update both manifest versions, commit, merge to `main`, and push a matching

@@ -16,6 +16,7 @@ from zipfile import ZipFile
 
 import check_mcp
 import prepare_release
+import preview_release
 from attach_release_assets import attach
 from promote_directory import BRANCH, REPOSITORY, promote, stable_version
 from validate import FILES, MCP_URL, ROOT
@@ -181,7 +182,14 @@ class Project(unittest.TestCase):
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / name, target)
-        for name in ("validate.py", "package.py", "check_mcp.py", "prepare_release.py"):
+        for name in (
+            "validate.py",
+            "package.py",
+            "check_mcp.py",
+            "prepare_release.py",
+            "preview_release.py",
+            "review.html",
+        ):
             target = self.root / "scripts" / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / "scripts" / name, target)
@@ -324,6 +332,147 @@ class PreparationTests(Project):
             with self.assertRaises(ValueError):
                 prepare_release.prepare(self.output, check_live=True, root=self.root)
         self.assertFalse((self.output / "preflight.json").exists())
+
+
+class PreviewTests(Project):
+    def capture(self, payload):
+        path = self.base / "tools.json"
+        path.write_text(json.dumps(payload))
+        return path
+
+    def test_preview_shows_package_without_claiming_live_tools_or_publication(self):
+        with patch(
+            "prepare_release.check",
+            side_effect=AssertionError("No live checks requested"),
+        ):
+            review = preview_release.preview(self.output, root=self.root)
+        self.assertTrue(review["previewOnly"])
+        self.assertEqual(
+            review["toolInventory"], {"status": "not_captured", "tools": []}
+        )
+        self.assertEqual(review["reviewCaseTools"], ["get_setup_status"])
+        self.assertEqual(review["manifestAuthor"], "Wimbly, Inc.")
+        self.assertEqual(review["source"]["commit"], self.git("rev-parse", "HEAD"))
+        page = (self.output / "review.html").read_text()
+        for expected in (
+            "Live tool inventory has not been captured",
+            "Wimbly, Inc.",
+            "script-src 'none'",
+            "data:image/svg+xml;base64,",
+            "data:image/png;base64,",
+        ):
+            self.assertIn(expected, page)
+        self.assertFalse((self.output / "preflight.json").exists())
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(json.loads((self.output / "review.json").read_text()), review)
+
+    def test_tool_snapshot_selects_definitions_only_and_preserves_exact_naming(self):
+        path = self.capture(
+            {
+                "access_token": "fixture-not-a-secret",
+                "result": {
+                    "tools": [
+                        {
+                            "name": "fixture_status",
+                            "title": "Fixture status",
+                            "description": "Test metadata only, never a real server result.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {"id": {"type": "string"}},
+                            },
+                            "annotations": {
+                                "readOnlyHint": True,
+                                "destructiveHint": False,
+                            },
+                            "privateResult": "fixture-private-payload",
+                        }
+                    ]
+                },
+            }
+        )
+        review = preview_release.preview(self.output, tools_json=path, root=self.root)
+        tool = review["toolInventory"]["tools"][0]
+        self.assertEqual(tool["name"], "fixture_status")
+        self.assertEqual(tool["title"], "Fixture status")
+        self.assertEqual(tool["annotations"]["readOnlyHint"], True)
+        for name in ("review.html", "review.json"):
+            text = (self.output / name).read_text()
+            self.assertIn("fixture_status", text)
+            self.assertNotIn("fixture-not-a-secret", text)
+            self.assertNotIn("fixture-private-payload", text)
+        self.assertFalse(review["toolInventory"]["sourceVerified"])
+
+    def test_listing_and_tool_metadata_are_escaped_and_do_not_execute_html(self):
+        plugin_path = self.root / "plugin.json"
+        plugin = json.loads(plugin_path.read_text())
+        attack = '<script>alert("fixture")</script>'
+        plugin["extensions"]["com.openai"]["interface"]["longDescription"] = attack
+        plugin_path.write_text(json.dumps(plugin))
+        path = self.capture(
+            {
+                "tools": [
+                    {"name": "fixture_status", "title": attack, "description": attack}
+                ]
+            }
+        )
+        preview_release.preview(self.output, tools_json=path, root=self.root)
+        page = (self.output / "review.html").read_text()
+        self.assertNotIn("<script>", page)
+        self.assertIn("&lt;script&gt;", page)
+        self.assertIn("script-src 'none'", page)
+
+    def test_invalid_partial_or_other_server_tool_captures_are_refused(self):
+        for payload in (
+            {"error": {"message": "fixture auth error"}},
+            {
+                "resource": "https://other.invalid/mcp",
+                "tools": [{"name": "fixture_status"}],
+            },
+            {"tools": [{"name": "fixture_status"}], "nextCursor": "another-page"},
+            {"tools": [{"name": "fixture_status"}, {"name": "fixture_status"}]},
+            {
+                "tools": [
+                    {"name": "fixture_status", "annotations": {"readOnlyHint": "true"}}
+                ]
+            },
+            {"tools": [{"name": "invalid tool name"}]},
+        ):
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                preview_release.preview(
+                    self.output, tools_json=self.capture(payload), root=self.root
+                )
+        self.assertFalse(self.output.exists())
+
+    def test_failed_preview_removes_earlier_review_page(self):
+        preview_release.preview(self.output, root=self.root)
+        self.assertTrue((self.output / "review.html").exists())
+        with patch(
+            "prepare_release.check",
+            side_effect=ValueError("Fixture unhealthy discovery"),
+        ):
+            with self.assertRaises(ValueError):
+                preview_release.preview(self.output, check_live=True, root=self.root)
+        for name in ("review.html", "review.json", "review.md"):
+            self.assertFalse((self.output / name).exists())
+
+    def test_preview_keeps_the_same_release_archives_and_excludes_review_files(self):
+        before = prepare_release.prepare(self.output, root=self.root)
+        review = preview_release.preview(self.output, root=self.root)
+        self.assertEqual(
+            before["artifacts"],
+            {name: value["sha256"] for name, value in review["archives"].items()},
+        )
+        for name, expected in before["artifacts"].items():
+            self.assertEqual(
+                hashlib.sha256((self.output / name).read_bytes()).hexdigest(), expected
+            )
+            with ZipFile(self.output / name) as archive:
+                self.assertFalse(
+                    any(
+                        "review.html" in name or "preview_release.py" in name
+                        for name in archive.namelist()
+                    )
+                )
 
 
 class AssetTests(Project):

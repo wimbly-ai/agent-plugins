@@ -19,7 +19,7 @@ jobs:
           python-version: "3.12"
       - run: python3 scripts/validate.py
       - run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
-      - run: python3 scripts/prepare_release.py
+      - run: python3 scripts/preview_release.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wimbly-plugin
@@ -27,6 +27,9 @@ jobs:
             dist/*.zip
             dist/SHA256SUMS
             dist/release.json
+            dist/review.html
+            dist/review.json
+            dist/review.md
           if-no-files-found: error
 
   release:
