@@ -1,0 +1,75 @@
+name: Release to plugin directories
+
+on:
+  release:
+    types: [released]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plugin-release-assets-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  prepare-and-promote:
+    if: >-
+      github.repository == 'wimbly-ai/agent-plugins' &&
+      !github.event.release.draft && !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: Test release behavior
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Build archives and verify public production discovery
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: python3 scripts/prepare_release.py --tag "$RELEASE_TAG" --check-live
+      - name: Verify promotion before changing release assets
+        run: >-
+          python3 scripts/promote_directory.py
+          --event "$GITHUB_EVENT_PATH" --expected-sha "$GITHUB_SHA"
+      - name: Attach directory artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: python3 scripts/attach_release_assets.py --tag "$RELEASE_TAG"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: directory-preflight-${{ github.event.release.tag_name }}
+          path: dist/preflight.json
+          if-no-files-found: error
+      - name: Advance Claude's tracked branch
+        run: >-
+          python3 scripts/promote_directory.py
+          --event "$GITHUB_EVENT_PATH" --expected-sha "$GITHUB_SHA" --apply
+      - name: Report remaining provider steps
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          release = json.loads(Path("dist/release.json").read_text())
+          version = release["version"]
+          text = (
+              f"## Wimbly {version}\n\n"
+              "Archives and SHA256SUMS are attached to this GitHub release.\n\n"
+              "- Claude: directory-release now points at this release. Configure the "
+              "existing listing to track that branch. Scanning and publication follow "
+              "Anthropic's review and auto-publish settings.\n"
+              f"- OpenAI: upload wimbly-{version}-openai-submission.zip in the existing "
+              "plugin's portal. Package/skill review and publication are portal actions. "
+              "Published MCP server updates are scanned automatically.\n\n"
+              "No directory approval or live publication is claimed by this workflow. "
+              "Public preflight checks do not exercise authenticated tools or UI.\n"
+          )
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(text)
+          PY
