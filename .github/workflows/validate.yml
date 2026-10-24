@@ -18,11 +18,18 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 scripts/validate.py
-      - run: python3 scripts/package.py
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - run: python3 scripts/preview_release.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: wimbly-plugin
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS
+            dist/release.json
+            dist/review.html
+            dist/review.json
+            dist/review.md
           if-no-files-found: error
 
   release:
@@ -31,17 +38,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    concurrency:
+      group: plugin-release-assets-${{ github.ref_name }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-      - run: python3 scripts/package.py --tag "$GITHUB_REF_NAME"
+      - run: python3 scripts/prepare_release.py --tag "$GITHUB_REF_NAME"
       - name: Publish preview
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create "$GITHUB_REF_NAME" dist/*.zip
-          --verify-tag --prerelease
-          --title "Wimbly $GITHUB_REF_NAME"
-          --notes "Wimbly tools and guided onboarding through one MCP connection. Requires an enrolled Wimbly account."
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            python3 scripts/attach_release_assets.py --tag "$GITHUB_REF_NAME"
+          else
+            gh release create "$GITHUB_REF_NAME" dist/*.zip dist/SHA256SUMS dist/release.json \
+              --verify-tag --prerelease --title "Wimbly $GITHUB_REF_NAME" \
+              --notes "Wimbly tools and guided onboarding through one MCP connection. Requires an enrolled Wimbly account."
+          fi

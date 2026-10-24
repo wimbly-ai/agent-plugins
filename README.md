@@ -1,72 +1,54 @@
 # Wimbly
 
-Wimbly is a Growth engine for legal and financial services. This repository
-contains its plugin for agents.
+Growth engine for legal and financial services. Connect your Wimbly account to
+use its tools and guided onboarding in your agent.
 
 ## Install
 
-In Claude Code:
+**Claude Code**
 
 ```text
 /plugin marketplace add wimbly-ai/agent-plugins
 /plugin install wimbly@wimbly
 ```
 
-In Codex:
+Then run `/wimbly:onboarding`.
+
+**Codex**
 
 ```sh
 codex plugin marketplace add wimbly-ai/agent-plugins
 codex plugin add wimbly@wimbly
 ```
 
-After installing, run `/wimbly:onboarding` in Claude Code or `$onboarding` in
-Codex. Sign in to your Wimbly account when prompted. The same connection
-provides Wimbly tools after onboarding.
+Then run `$onboarding`. Sign in to Wimbly when prompted.
 
-## Skills
+## Preview before sending
 
-| Skill | Claude Code | Codex |
-| --- | --- | --- |
-| [Onboarding](skills/onboarding/SKILL.md) | `/wimbly:onboarding` | `$onboarding` |
+1. Open [Preview plugin release](https://github.com/wimbly-ai/agent-plugins/actions/workflows/preview-release.yml)
+   → **Run workflow**. Choose a branch or enter a version tag.
+2. Download **wimbly-release-preview**, unzip it, and open **review.html**.
+3. Inspect live tools in the [OpenAI portal](https://platform.openai.com/plugins)
+   → **Wimbly → MCPs → Wimbly** after signing in. The ZIP doesn't contain the tool list.
 
-[Support and account access](https://www.wimbly.ai/contact) ·
-[Privacy](https://www.wimbly.ai/legal-pages/privacy-policy) ·
-[Terms](https://www.wimbly.ai/legal-pages/terms-conditions)
+## Release
 
-## Maintain
+1. Bump versions in [plugin.json](plugin.json) and
+   [.claude-plugin/plugin.json](.claude-plugin/plugin.json), merge to `main`, and
+   push a matching `vX.Y.Z` tag. CI creates a [GitHub prerelease](https://github.com/wimbly-ai/agent-plugins/releases).
+2. Preview that tag using the steps above.
+3. Open [Release to plugin directories](https://github.com/wimbly-ai/agent-plugins/actions/workflows/directory-release.yml)
+   → **Run workflow**. Choose `main` and enter the reviewed tag.
+4. In the [OpenAI portal](https://platform.openai.com/plugins), upload
+   `wimbly-<version>-openai-submission.zip` to Wimbly, then complete review and publication.
 
-Python 3.12 or later; no dependencies.
+For Claude, set **Settings → Tracked branch or tag** to `directory-release` in
+the [Claude portal](https://claude.ai/directory/manage). Publication follows its review settings.
 
-```sh
-python3 scripts/validate.py
-python3 scripts/package.py
-```
+The workflow buttons become available after this automation merges to `main`.
+Previewing publishes nothing; backend deployment is separate.
 
-The ZIP is written to `dist/` and includes only the plugin files. To release,
-update both manifest versions and push a matching `v<version>` tag. CI validates
-the package and attaches the ZIP to a GitHub prerelease.
-
-For a local or workspace ChatGPT upload, set `OPENAI_APP_ID` to the actual
-registered MCP server ID, then build its host-specific archive:
-
-```sh
-python3 scripts/package.py --openai-app-id "$OPENAI_APP_ID"
-```
-
-Use an `asdk_app_`, `connector_`, or `templated_apps_` ID. A UI route such as
-`plugin_asdk_app_...` includes a `plugin_` prefix that is not part of the mapping
-ID and is rejected. This writes `dist/wimbly-<version>-chatgpt.zip`; `--output`
-overrides the destination. The generated `.app.json` binds the registered server.
-ChatGPT expects one plugin manifest, so this archive places portable files at its
-root and omits Claude compatibility files and marketplace catalogs. The default
-build remains the universal archive for Claude and native clients.
-
-The portable `mcp.json` declares OAuth with CIMD client registration for OpenAI
-and the canonical Wimbly resource. Endpoints are discovered from the server;
-credentials do not belong in the package. Keep this declaration when editing
-connection metadata, following [OpenAI's authentication guidance](https://developers.openai.com/plugins/build/plugins#configure-mcp-authentication).
-
-Installation follows `main`; released ZIPs are available under
-[Releases](https://github.com/wimbly-ai/agent-plugins/releases). To update, run
-`claude plugin update wimbly@wimbly` or
-`codex plugin marketplace upgrade wimbly`, then restart the client.
+[Local commands, private installs and troubleshooting](https://github.com/wimbly-ai/agent-plugins/blob/main/CONTRIBUTING.md)
+· [Support](https://www.wimbly.ai/contact)
+· [Privacy](https://www.wimbly.ai/legal-pages/privacy-policy)
+· [Terms](https://www.wimbly.ai/legal-pages/terms-conditions)

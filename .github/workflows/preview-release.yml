@@ -1,0 +1,50 @@
+name: Preview plugin release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Optional existing version tag (v0.1.5); empty uses the selected branch"
+        required: false
+        type: string
+
+# Previewing cannot create releases, upload release assets or move directory-release.
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: Test preview and release behavior
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Build review page and verify public discovery
+        env:
+          PREVIEW_TAG: ${{ inputs.tag }}
+        run: |
+          if [ -n "$PREVIEW_TAG" ]; then
+            python3 scripts/preview_release.py --check-live --tag "$PREVIEW_TAG"
+          else
+            python3 scripts/preview_release.py --check-live
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wimbly-release-preview
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS
+            dist/release.json
+            dist/preflight.json
+            dist/review.html
+            dist/review.json
+            dist/review.md
+          if-no-files-found: error
+      - name: Show review instructions
+        run: cat dist/review.md >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>$name $version · Release preview</title>
+  <style>
+    :root { color-scheme: light dark; --paper: light-dark(#fff,#181818); --ink: light-dark(#1b1b1b,#eee); --subtle: light-dark(#666,#aaa); --line: light-dark(#e6e6e6,#353535); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; color: var(--foreground,var(--ink)); font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif); }
+    main { max-width: 840px; margin: 0 auto; padding: 28px 0; }
+    h1 { font-size: 32px; line-height: 1.15; margin: 0 0 9px; letter-spacing: -.7px; }
+    h2 { font-size: 20px; margin: 0 0 16px; letter-spacing: -.25px; }
+    h3 { font-size: 16px; margin: 0 0 8px; }
+    p, li, dd { font-size: 14px; line-height: 1.6; }
+    p { margin: 9px 0; }
+    .muted { color: var(--muted-foreground,var(--subtle)); }
+    .eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 24px; }
+    header { display: flex; gap: 20px; align-items: center; }
+    .logo { width: 80px; height: 80px; flex: 0 0 80px; }
+    .version { font-size: 14px; font-weight: 400; letter-spacing: 0; }
+    section { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--border,var(--line)); }
+    .description { white-space: pre-wrap; overflow-wrap: anywhere; }
+    dl { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: 10px 20px; margin: 18px 0 0; }
+    dt { font-size: 13px; color: var(--muted-foreground,var(--subtle)); padding-top: 2px; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    .icons { display: flex; gap: 14px; flex-wrap: wrap; }
+    .icon { padding: 18px; min-width: 116px; border: 1px solid #ddd; border-radius: 12px; background: #fff; color: #333; }
+    .icon.dark { background: #171717; border-color: #333; color: #eee; }
+    .icon img { width: 24px; height: 24px; display: block; margin-bottom: 12px; }
+    .icon span { font-size: 12px; }
+    code, pre { font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 12px; overflow-wrap: anywhere; }
+    pre { margin: 14px 0 4px; line-height: 1.6; white-space: pre-wrap; }
+    details { border-top: 1px solid var(--border,var(--line)); padding: 15px 0; }
+    summary { cursor: pointer; font-size: 13px; font-weight: 550; overflow-wrap: anywhere; }
+    .tool { padding: 20px 0; }
+    .tool + .tool { border-top: 1px solid var(--border,var(--line)); }
+    .flags { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; overflow-wrap: anywhere; }
+    ul, ol { padding-left: 20px; }
+    a { color: inherit; text-underline-offset: 3px; }
+    footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border,var(--line)); }
+    @media (max-width: 600px) { main { padding-top: 18px; } dl { grid-template-columns: 1fr; gap: 4px; } dd { margin-bottom: 12px; } h1 { font-size: 27px; } header { gap: 14px; } .logo { width: 64px; height: 64px; flex-basis: 64px; } }
+    @media print { details { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+<main>
+  <p class="eyebrow muted">Package review · Nothing submitted</p>
+  <header>
+    <img class="logo" src="$logo" alt="Wimbly plugin icon">
+    <div><h1>$name <span class="version muted">$version</span></h1><p>By $author</p><p class="muted">$description</p></div>
+  </header>
+  <section>
+    <h2>Listing and naming</h2>
+    <p class="description">$long_description</p>
+    <dl>
+      <dt>Plugin identifier</dt><dd><code>$slug</code></dd>
+      <dt>Manifest author</dt><dd>$manifest_author</dd>
+      <dt>Listed capabilities</dt><dd>$capabilities</dd>
+      <dt>MCP server</dt><dd><code>$resource</code></dd>
+      <dt>Source commit</dt><dd><code>$commit</code><br><span class="muted">$source_state</span></dd>
+    </dl>
+  </section>
+  <section>
+    <h2>Small icons beside prompts</h2>
+    <div class="icons"><div class="icon"><img src="$small_light" alt="Light theme composer icon"><span>Light appearance</span></div><div class="icon dark"><img src="$small_dark" alt="Dark theme composer icon"><span>Dark appearance</span></div></div>
+  </section>
+  <section>
+    <h2>Starter prompts and onboarding</h2>
+    <ul>$prompts</ul>
+    <p>The onboarding review cases call $review_tools. This is not the complete live tool inventory.</p>
+    $skill
+    $review_cases
+  </section>
+  <section>
+    <h2>Tools, titles and declared behavior</h2>
+    $inventory
+  </section>
+  <section>
+    <h2>Files prepared for release</h2>
+    $archives
+  </section>
+  <section>
+    <h2>See it in the actual clients</h2>
+    <ol>
+      <li><strong>ChatGPT:</strong> open the existing publisher draft, select MCPs → Wimbly and inspect its discovered tools. For a private test installation, use ChatGPT Plugins and a mapped test ZIP; keep the public submission ZIP for the publisher portal.</li>
+      <li><strong>Claude:</strong> use the existing Wimbly connector or a private plugin installation. Inspect its tools and try onboarding in a new chat.</li>
+      <li><strong>MCP Inspector:</strong> connect to the MCP server above, sign in, then select Tools → List Tools. Metadata inspection does not require running any tool.</li>
+    </ol>
+  </section>
+  <footer class="muted"><p>This page reads the package source. It is not a ChatGPT or Claude screenshot, a provider approval, or a production tool acceptance test. Nothing here submits or publishes. <a href="https://developers.openai.com/plugins/deploy/connect-chatgpt">OpenAI testing guide</a> · <a href="https://modelcontextprotocol.io/docs/tools/inspector">MCP Inspector</a></p></footer>
+</main>
+</body>
+</html>
