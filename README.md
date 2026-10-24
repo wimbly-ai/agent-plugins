@@ -1,199 +1,54 @@
 # Wimbly
 
-Wimbly is a Growth engine for legal and financial services. This repository
-contains its plugin for agents.
+Growth engine for legal and financial services. Connect your Wimbly account to
+use its tools and guided onboarding in your agent.
 
 ## Install
 
-In Claude Code:
+**Claude Code**
 
 ```text
 /plugin marketplace add wimbly-ai/agent-plugins
 /plugin install wimbly@wimbly
 ```
 
-In Codex:
+Then run `/wimbly:onboarding`.
+
+**Codex**
 
 ```sh
 codex plugin marketplace add wimbly-ai/agent-plugins
 codex plugin add wimbly@wimbly
 ```
 
-After installing, run `/wimbly:onboarding` in Claude Code or `$onboarding` in
-Codex. Sign in to your Wimbly account when prompted. The same connection
-provides Wimbly tools after onboarding.
+Then run `$onboarding`. Sign in to Wimbly when prompted.
 
-## Skills
+## Preview before sending
 
-| Skill | Claude Code | Codex |
-| --- | --- | --- |
-| [Onboarding](skills/onboarding/SKILL.md) | `/wimbly:onboarding` | `$onboarding` |
+1. Open [Preview plugin release](https://github.com/wimbly-ai/agent-plugins/actions/workflows/preview-release.yml)
+   → **Run workflow**. Choose a branch or enter a version tag.
+2. Download **wimbly-release-preview**, unzip it, and open **review.html**.
+3. Inspect live tools in the [OpenAI portal](https://platform.openai.com/plugins)
+   → **Wimbly → MCPs → Wimbly** after signing in. The ZIP doesn't contain the tool list.
 
-[Support and account access](https://www.wimbly.ai/contact) ·
-[Privacy](https://www.wimbly.ai/legal-pages/privacy-policy) ·
-[Terms](https://www.wimbly.ai/legal-pages/terms-conditions)
+## Release
 
-## Maintain
+1. Bump versions in [plugin.json](plugin.json) and
+   [.claude-plugin/plugin.json](.claude-plugin/plugin.json), merge to `main`, and
+   push a matching `vX.Y.Z` tag. CI creates a [GitHub prerelease](https://github.com/wimbly-ai/agent-plugins/releases).
+2. Preview that tag using the steps above.
+3. Open [Release to plugin directories](https://github.com/wimbly-ai/agent-plugins/actions/workflows/directory-release.yml)
+   → **Run workflow**. Choose `main` and enter the reviewed tag.
+4. In the [OpenAI portal](https://platform.openai.com/plugins), upload
+   `wimbly-<version>-openai-submission.zip` to Wimbly, then complete review and publication.
 
-Python 3.12 or later; no dependencies.
+For Claude, set **Settings → Tracked branch or tag** to `directory-release` in
+the [Claude portal](https://claude.ai/directory/manage). Publication follows its review settings.
 
-```sh
-python3 scripts/validate.py
-python3 scripts/package.py
-python3 -m unittest discover -s scripts -p 'test_*.py' -v
-```
+The workflow buttons become available after this automation merges to `main`.
+Previewing publishes nothing; backend deployment is separate.
 
-The default ZIP is written to `dist/` and includes only the plugin files. Build
-both directory archives and their checksums with:
-
-```sh
-python3 scripts/prepare_release.py
-```
-
-This writes `wimbly-<version>.zip` for Claude/native clients,
-`wimbly-<version>-openai-submission.zip` for OpenAI's public portal,
-`SHA256SUMS`, and `release.json`. The OpenAI archive has one manifest at its root,
-declares the canonical OAuth MCP server, and contains no registered-app mapping.
-`release.json` records the source commit and the remaining provider actions; it
-does not report a submission or publication as completed.
-
-### Preview before sending
-
-After these workflows merge to `main`, open this repository's **Actions →
-Preview plugin release → Run workflow**. Select the branch to inspect, or enter
-an existing version tag such as `v0.1.5`. That source must contain the preview
-scripts. The workflow uses read-only repository permissions, runs tests and
-public discovery checks, and uploads a **wimbly-release-preview** artifact.
-Download it, extract it, and open **review.html** in your browser.
-
-The page shows the exact package's display name, developer, version, main icon,
-light/dark composer icons, starter prompts, onboarding skill, review cases,
-archive file lists and checksums. `review.json` contains the same information as
-data. PR validation also includes these files in its **wimbly-plugin** artifact.
-This is a package review page, not a screenshot of either host. Previewing does
-not create a release, advance Claude's tracked branch, submit a plugin or deploy
-the backend. **Release to plugin directories → Run workflow** is the separate
-release action, described below.
-
-For the same preview locally:
-
-```sh
-python3 scripts/preview_release.py --check-live
-open dist/review.html
-```
-
-**Tools come from the server, not the ZIP.** Their names, titles, descriptions,
-schemas and annotation hints require authenticated discovery and can depend on
-the signed-in account's enabled capabilities. The GitHub workflow has no Wimbly
-credentials and explicitly marks the live inventory as not captured. The
-onboarding review cases name `get_setup_status`; that is not a full tool list.
-
-Inspect the exact live inventory before submission:
-
-1. In the existing OpenAI publisher draft, open **MCPs → Wimbly**, connect if
-   needed, and inspect the discovered tools. Alternatively use a private custom
-   MCP/plugin installation in ChatGPT or the existing Wimbly connector in Claude.
-2. For the raw metadata, launch [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector)
-   with `npx @modelcontextprotocol/inspector --server-url https://mcp.wimbly.ai/mcp --transport http`.
-   Sign in, then use **Tools → List Tools**. Listing metadata does not invoke a
-   tool. Review each technical name, display title, description, input schema
-   and declared read/write, destructive and external-world hints.
-3. Optionally save only the complete `tools/list` response as JSON and run
-   `python3 scripts/preview_release.py --tools-json /tmp/wimbly-tools.json`.
-   The page then includes that inventory. It selects tool definitions only,
-   ignores unrelated capture fields and labels the snapshot as supplied,
-   not independently verified. Do not use an auth/session export or commit
-   credentials. Capture every page when the server supplies `nextCursor`.
-
-See [OpenAI's testing and metadata-refresh instructions](https://developers.openai.com/plugins/deploy/connect-chatgpt).
-Connecting or privately installing is separate from submitting for public review.
-
-### Release to the directories
-
-1. Update both manifest versions, commit, merge to `main`, and push a matching
-   `v<version>` tag. The tagged commit must include these release workflows.
-   CI validates the source and attaches both archives, checksums and the release
-   manifest to a GitHub **prerelease**. A tag or prerelease leaves the directory
-   branch unchanged.
-2. Inspect that candidate with **Preview plugin release**. When ready, open
-   **Actions → Release to plugin directories → Run workflow**. Leave **Use workflow
-   from** on `main` and enter the reviewed tag, for example `v0.1.5`. This is the
-   explicit release action: creating a tag or manually marking a release stable
-   does not trigger this delivery workflow. The workflow requires an existing,
-   published GitHub release candidate; it refuses missing releases and drafts.
-3. The workflow tests again, checks public production MCP discovery, and verifies
-   existing release assets byte for byte. Missing assets are uploaded; published
-   files are never overwritten. It then marks that candidate as a full GitHub
-   release and advances `directory-release` to its exact commit. The tag,
-   resolved source SHA, both manifest versions and archive checksums must agree.
-   The commit must belong to `main`. Promotion is a normal fast-forward push
-   and refuses version reductions,
-   history rewrites and older candidates. Release runs are serialized; retries
-   verify the current GitHub release state and assets again. If a later step
-   fails after the candidate became stable, rerun with the same tag to finish.
-   Prepare prerelease assets before making a release immutable.
-4. Claude checks that branch through its configured webhook or scheduled poll.
-   OpenAI's package upload remains an explicit portal action, using the attached
-   `-openai-submission.zip`. Complete the applicable review and publication there.
-
-The public preflight uses no credentials and makes no authenticated tool calls.
-Its timestamped `preflight.json` is a workflow artifact, separate from immutable
-release files. Promotion requires a check for the same commit within 15 minutes.
-It verifies production resource/issuer metadata, authentication challenges, PKCE,
-CIMD, and private-route fences; actual OAuth, tools and UI need host testing.
-This repository releases plugin packages and Claude's source reference. The
-Wimbly backend continues to use its own deployment workflow.
-
-### One-time directory setup
-
-- **Claude:** submit this repository's root plugin and its canonical MCP server
-  from the Wimbly organization. Once the first manual delivery creates
-  `directory-release`, set the plugin's **Tracked branch or tag** to that branch.
-  Enable the portal's GitHub push updates and **Publish new versions
-  automatically** where available. Anthropic controls the review setting:
-  the first version, or every version, may still need a reviewer. Until a newer
-  version is published, the existing published version remains live. See
-  [Claude's update and publication rules](https://claude.com/docs/plugins/submit).
-- **OpenAI:** use **With MCP** with `https://mcp.wimbly.ai/mcp`, the public
-  submission ZIP, and the verified Wimbly publisher identity. Enter reviewer
-  access only in the portal. After initial publication, eligible hosted MCP
-  changes are scanned automatically, or can be rescanned in the portal. Skills,
-  icons and listing changes require a new package upload and review. This
-  workflow prepares those files and does not automate the portal's attestations
-  or claim review approval. Keep the MCP URL stable. See
-  [OpenAI's submission and update rules](https://developers.openai.com/plugins/deploy/submission).
-
-Both portals need their initial submission/review setup before automatic
-updates can operate. Branch protection or token permissions that block
-`directory-release` cause the workflow to fail; it does not override them.
-A Claude listing that still tracks `main` continues to scan `main`; configure
-it to follow `directory-release` to use this manual delivery control.
-
-### Local or workspace ChatGPT installs
-
-For a local or workspace ChatGPT upload, set `OPENAI_APP_ID` to the actual
-registered MCP server ID, then build its host-specific archive:
-
-```sh
-python3 scripts/package.py --openai-app-id "$OPENAI_APP_ID"
-```
-
-Use an `asdk_app_`, `connector_`, or `templated_apps_` ID. A UI route such as
-`plugin_asdk_app_...` includes a `plugin_` prefix that is not part of the mapping
-ID and is rejected. This writes `dist/wimbly-<version>-chatgpt.zip`; `--output`
-overrides the destination. The generated `.app.json` binds the registered server.
-ChatGPT expects one plugin manifest, so this archive places portable files at its
-root and omits Claude compatibility files and marketplace catalogs. The default
-build remains the universal archive for Claude and native clients.
-The mapped `-chatgpt.zip` is for private tests and workspace installations;
-use `-openai-submission.zip` for the public directory instead.
-
-The portable `mcp.json` declares OAuth with CIMD client registration for OpenAI
-and the canonical Wimbly resource. Endpoints are discovered from the server;
-credentials do not belong in the package. Keep this declaration when editing
-connection metadata, following [OpenAI's authentication guidance](https://developers.openai.com/plugins/build/plugins#configure-mcp-authentication).
-
-Installation follows `main`; released ZIPs are available under
-[Releases](https://github.com/wimbly-ai/agent-plugins/releases). To update, run
-`claude plugin update wimbly@wimbly` or
-`codex plugin marketplace upgrade wimbly`, then restart the client.
+[Local commands, private installs and troubleshooting](https://github.com/wimbly-ai/agent-plugins/blob/main/CONTRIBUTING.md)
+· [Support](https://www.wimbly.ai/contact)
+· [Privacy](https://www.wimbly.ai/legal-pages/privacy-policy)
+· [Terms](https://www.wimbly.ai/legal-pages/terms-conditions)
