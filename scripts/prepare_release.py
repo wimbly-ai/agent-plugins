@@ -55,7 +55,7 @@ def prepare(output, tag=None, check_live=False, root=ROOT):
             "hostedMcpUpdates": "Automatically scanned after initial publication",
         },
         "claude": {
-            "delivery": "tracked_branch_after_stable_release",
+            "delivery": "manual_workflow_then_tracked_branch",
             "archive": f"wimbly-{version}.zip",
             "repository": "https://github.com/wimbly-ai/agent-plugins",
             "trackedBranch": "directory-release",

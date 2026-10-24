@@ -3,12 +3,15 @@
 import copy
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import threading
 import unittest
+from functools import partial
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from unittest.mock import patch
@@ -187,6 +190,7 @@ class Project(unittest.TestCase):
             "package.py",
             "check_mcp.py",
             "prepare_release.py",
+            "promote_directory.py",
             "preview_release.py",
             "review.html",
         ):
@@ -526,6 +530,14 @@ class AssetTests(Project):
 class PromotionTests(Project):
     def setUp(self):
         super().setUp()
+        self.release_overrides = {}
+        self.release_reads = []
+        self.promote = partial(
+            promote,
+            event_name="workflow_dispatch",
+            workflow_ref="refs/heads/main",
+            read_release=self.read_release,
+        )
         self.origin = self.base / "origin.git"
         subprocess.run(
             ["git", "init", "--bare", str(self.origin)], check=True, capture_output=True
@@ -534,25 +546,30 @@ class PromotionTests(Project):
         self.git("push", "origin", "main")
         self.tag_and_prepare()
 
+    def read_release(self, tag):
+        self.release_reads.append(tag)
+        return {
+            "tagName": tag,
+            "isDraft": False,
+            "isPrerelease": False,
+            "publishedAt": "2026-10-24T00:00:00Z",
+            **self.release_overrides,
+        }
+
     def tag_and_prepare(self):
         self.version = json.loads((self.root / "plugin.json").read_text())["version"]
         self.git("tag", "v" + self.version)
         self.git("push", "origin", "v" + self.version)
         self.source = self.git("rev-parse", "HEAD")
         self.event = {
-            "action": "released",
             "repository": {"full_name": REPOSITORY},
-            "release": {
-                "tag_name": "v" + self.version,
-                "draft": False,
-                "prerelease": False,
-            },
+            "inputs": {"tag": "v" + self.version},
         }
         with patch("prepare_release.check", return_value=check_mcp.check(discovery)):
             prepare_release.prepare(self.output, check_live=True, root=self.root)
 
     def apply(self, event=None, apply=True):
-        return promote(
+        return self.promote(
             event or self.event, self.source, self.output, apply=apply, root=self.root
         )
 
@@ -579,12 +596,10 @@ class PromotionTests(Project):
         self.assertTrue(self.remote_branch().startswith(self.source + "\t"))
         self.assertEqual(self.apply()["status"], "already_promoted")
 
-    def test_prerelease_draft_wrong_repository_or_wrong_event_cannot_promote(self):
+    def test_wrong_repository_or_missing_selected_tag_cannot_promote(self):
         invalid = [
-            {"release": {**self.event["release"], "prerelease": True}},
-            {"release": {**self.event["release"], "draft": True}},
             {"repository": {"full_name": "other/repository"}},
-            {"action": "published"},
+            {"inputs": {}},
         ]
         for change in invalid:
             with self.subTest(change=change):
@@ -594,9 +609,154 @@ class PromotionTests(Project):
                     self.apply(event)
                 self.assertEqual(self.remote_branch(), "")
 
+    def test_only_manual_dispatch_from_main_can_promote(self):
+        for context in (
+            {"event_name": "release"},
+            {"event_name": "push"},
+            {"workflow_ref": "refs/heads/another-branch"},
+            {"workflow_ref": "refs/tags/v" + self.version},
+        ):
+            with (
+                self.subTest(context=context),
+                self.assertRaisesRegex(ValueError, "explicit workflow dispatch"),
+            ):
+                self.promote(
+                    self.event,
+                    self.source,
+                    self.output,
+                    root=self.root,
+                    apply=True,
+                    **context,
+                )
+        self.assertEqual(self.remote_branch(), "")
+        self.assertEqual(self.release_reads, [])
+
+    def test_matching_published_candidate_is_required(self):
+        for metadata in (
+            {"isDraft": True},
+            {"publishedAt": None},
+            {"tagName": "v999.0.0"},
+            {"isPrerelease": "false"},
+        ):
+            self.release_overrides = metadata
+            with (
+                self.subTest(metadata=metadata),
+                self.assertRaisesRegex(ValueError, "matching published GitHub release"),
+            ):
+                self.apply()
+        self.assertEqual(self.remote_branch(), "")
+
+    def test_prerelease_can_be_checked_but_not_delivered_until_stable(self):
+        self.release_overrides = {"isPrerelease": True}
+        self.assertEqual(self.apply(apply=False)["status"], "dry_run")
+        with self.assertRaisesRegex(ValueError, "stable before applying"):
+            self.apply()
+        self.assertEqual(self.remote_branch(), "")
+        self.release_overrides = {"isPrerelease": False}
+        self.assertEqual(self.apply()["status"], "promoted_for_claude_scan")
+
+    def test_selected_tag_uses_its_source_when_main_has_advanced(self):
+        selected_source = self.source
+        with (self.root / "README.md").open("a") as file:
+            file.write("\nFixture main advanced after the selected tag\n")
+        self.git("add", ".")
+        self.git("commit", "-m", "Fixture later main")
+        main_source = self.git("rev-parse", "HEAD")
+        self.git("push", "origin", "main")
+        self.git("checkout", "--detach", selected_source)
+        self.assertNotEqual(main_source, selected_source)
+        self.assertEqual(self.apply()["commit"], selected_source)
+        self.assertTrue(self.remote_branch().startswith(selected_source + "\t"))
+
+    def test_manual_workflow_cli_promotes_and_retries_without_republishing(self):
+        state = self.base / "release-state.json"
+        state.write_text(
+            json.dumps({**self.read_release("v" + self.version), "isPrerelease": True})
+        )
+        event = self.base / "dispatch.json"
+        event.write_text(json.dumps(self.event))
+        commands = self.base / "gh-commands.jsonl"
+        binaries = self.base / "bin"
+        binaries.mkdir()
+        gh = binaries / "gh"
+        gh.write_text(
+            f"#!{sys.executable}\n"
+            + textwrap.dedent("""\
+            import json, os, sys
+            from pathlib import Path
+            args = sys.argv[1:]
+            state = Path(os.environ["RELEASE_FIXTURE_STATE"])
+            release = json.loads(state.read_text())
+            with Path(os.environ["RELEASE_FIXTURE_COMMANDS"]).open("a") as log:
+                log.write(json.dumps(args) + "\\n")
+            assert args[:1] == ["release"] and args[2] == release["tagName"]
+            if args[1] == "view":
+                print(str(release["isPrerelease"]).lower() if "--jq" in args else json.dumps(release))
+            elif args[1] == "edit":
+                assert "--prerelease=false" in args and "--verify-tag" in args
+                release["isPrerelease"] = False
+                state.write_text(json.dumps(release))
+            else:
+                raise AssertionError("Unexpected fixture GitHub command")
+        """)
+        )
+        gh.chmod(0o755)
+        env = {
+            **os.environ,
+            "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
+            "GITHUB_EVENT_NAME": "workflow_dispatch",
+            "GITHUB_REF": "refs/heads/main",
+            "GITHUB_REPOSITORY": REPOSITORY,
+            "RELEASE_TAG": "v" + self.version,
+            "RELEASE_FIXTURE_STATE": str(state),
+            "RELEASE_FIXTURE_COMMANDS": str(commands),
+        }
+        command = [
+            sys.executable,
+            str(self.root / "scripts/promote_directory.py"),
+            "--event",
+            str(event),
+            "--expected-sha",
+            self.source,
+            "--artifact-dir",
+            str(self.output),
+        ]
+
+        def cli(*extra):
+            result = subprocess.run(
+                command + list(extra),
+                cwd=self.root,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads(result.stdout)
+
+        self.assertEqual(cli()["status"], "dry_run")
+        self.assertEqual(self.remote_branch(), "")
+        workflow = (ROOT / ".github/workflows/directory-release.yml").read_text()
+        step = workflow.split("      - name: Mark the verified candidate stable\n", 1)[
+            1
+        ]
+        shell = textwrap.dedent(
+            step.split("        run: |\n", 1)[1].split("      - name:", 1)[0]
+        )
+        subprocess.run(
+            ["bash", "-e", "-o", "pipefail", "-c", shell], env=env, check=True
+        )
+        self.assertEqual(cli("--apply")["status"], "promoted_for_claude_scan")
+        self.assertTrue(self.remote_branch().startswith(self.source + "\t"))
+        subprocess.run(
+            ["bash", "-e", "-o", "pipefail", "-c", shell], env=env, check=True
+        )
+        self.assertEqual(cli("--apply")["status"], "already_promoted")
+        calls = [json.loads(line) for line in commands.read_text().splitlines()]
+        self.assertEqual(sum(call[1] == "edit" for call in calls), 1)
+
     def test_unmatched_source_or_changed_archive_cannot_promote(self):
         with self.assertRaisesRegex(ValueError, "must agree"):
-            promote(self.event, "a" * 40, self.output, apply=True, root=self.root)
+            self.promote(self.event, "a" * 40, self.output, apply=True, root=self.root)
         archive = self.output / f"wimbly-{self.version}-openai-submission.zip"
         archive.write_bytes(archive.read_bytes() + b"tampered fixture")
         with self.assertRaisesRegex(ValueError, "checksum mismatch"):
@@ -655,7 +815,7 @@ class PromotionTests(Project):
         with patch("prepare_release.check", return_value=check_mcp.check(discovery)):
             prepare_release.prepare(self.output, check_live=True, root=self.root)
         with self.assertRaisesRegex(ValueError, "cannot move backwards"):
-            promote(old_event, old_source, self.output, apply=True, root=self.root)
+            self.promote(old_event, old_source, self.output, apply=True, root=self.root)
         self.assertTrue(self.remote_branch().startswith(newest + "\t"))
 
     def test_descendant_commit_cannot_reduce_version(self):

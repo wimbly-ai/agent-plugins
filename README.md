@@ -72,7 +72,8 @@ archive file lists and checksums. `review.json` contains the same information as
 data. PR validation also includes these files in its **wimbly-plugin** artifact.
 This is a package review page, not a screenshot of either host. Previewing does
 not create a release, advance Claude's tracked branch, submit a plugin or deploy
-the backend. Marking a GitHub release as full remains the separate release action.
+the backend. **Release to plugin directories → Run workflow** is the separate
+release action, described below.
 
 For the same preview locally:
 
@@ -114,16 +115,23 @@ Connecting or privately installing is separate from submitting for public review
    CI validates the source and attaches both archives, checksums and the release
    manifest to a GitHub **prerelease**. A tag or prerelease leaves the directory
    branch unchanged.
-2. When that candidate is ready, mark its GitHub release as a full release. The
-   `Release to plugin directories` workflow tests again, checks public production
-   MCP discovery, and verifies existing release assets byte for byte. Missing
-   assets are uploaded; published files are never overwritten. Prepare the
-   prerelease assets before making a release immutable.
-3. Only after those checks pass does the workflow advance `directory-release`
-   to the exact release commit. It requires the tag, event SHA, both manifest
-   versions and archive checksums to agree. The commit must belong to `main`;
-   promotion is a normal fast-forward push and refuses version reductions,
-   history rewrites and old release events. Retries of the same release are safe.
+2. Inspect that candidate with **Preview plugin release**. When ready, open
+   **Actions → Release to plugin directories → Run workflow**. Leave **Use workflow
+   from** on `main` and enter the reviewed tag, for example `v0.1.5`. This is the
+   explicit release action: creating a tag or manually marking a release stable
+   does not trigger this delivery workflow. The workflow requires an existing,
+   published GitHub release candidate; it refuses missing releases and drafts.
+3. The workflow tests again, checks public production MCP discovery, and verifies
+   existing release assets byte for byte. Missing assets are uploaded; published
+   files are never overwritten. It then marks that candidate as a full GitHub
+   release and advances `directory-release` to its exact commit. The tag,
+   resolved source SHA, both manifest versions and archive checksums must agree.
+   The commit must belong to `main`. Promotion is a normal fast-forward push
+   and refuses version reductions,
+   history rewrites and older candidates. Release runs are serialized; retries
+   verify the current GitHub release state and assets again. If a later step
+   fails after the candidate became stable, rerun with the same tag to finish.
+   Prepare prerelease assets before making a release immutable.
 4. Claude checks that branch through its configured webhook or scheduled poll.
    OpenAI's package upload remains an explicit portal action, using the attached
    `-openai-submission.zip`. Complete the applicable review and publication there.
@@ -139,7 +147,7 @@ Wimbly backend continues to use its own deployment workflow.
 ### One-time directory setup
 
 - **Claude:** submit this repository's root plugin and its canonical MCP server
-  from the Wimbly organization. Once the first full GitHub release creates
+  from the Wimbly organization. Once the first manual delivery creates
   `directory-release`, set the plugin's **Tracked branch or tag** to that branch.
   Enable the portal's GitHub push updates and **Publish new versions
   automatically** where available. Anthropic controls the review setting:
@@ -158,6 +166,8 @@ Wimbly backend continues to use its own deployment workflow.
 Both portals need their initial submission/review setup before automatic
 updates can operate. Branch protection or token permissions that block
 `directory-release` cause the workflow to fail; it does not override them.
+A Claude listing that still tracks `main` continues to scan `main`; configure
+it to follow `directory-release` to use this manual delivery control.
 
 ### Local or workspace ChatGPT installs
 

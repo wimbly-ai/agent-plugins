@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -25,18 +26,45 @@ def stable_version(version):
     return tuple(map(int, match.groups()))
 
 
-def promote(event, expected_sha, artifact_dir, apply=False, root=ROOT):
-    release = event.get("release", {})
+def github_release(tag):
+    return json.loads(
+        subprocess.check_output(
+            [
+                "gh",
+                "release",
+                "view",
+                tag,
+                "--repo",
+                REPOSITORY,
+                "--json",
+                "tagName,isDraft,isPrerelease,publishedAt",
+            ],
+            cwd=ROOT,
+            text=True,
+        )
+    )
+
+
+def promote(
+    event,
+    expected_sha,
+    artifact_dir,
+    apply=False,
+    root=ROOT,
+    *,
+    event_name=None,
+    workflow_ref=None,
+    read_release=github_release,
+):
     if (
-        event.get("action") != "released"
+        event_name != "workflow_dispatch"
+        or workflow_ref != "refs/heads/main"
         or event.get("repository", {}).get("full_name") != REPOSITORY
-        or release.get("draft") is not False
-        or release.get("prerelease") is not False
     ):
         raise ValueError(
-            "Only a stable release event from the plugin repository can promote"
+            "Only an explicit workflow dispatch from main in the plugin repository can promote"
         )
-    tag = release.get("tag_name", "")
+    tag = event.get("inputs", {}).get("tag", "")
     if not isinstance(tag, str) or not tag.startswith("v"):
         raise ValueError("Expected a v-prefixed release tag")
     version = tag[1:]
@@ -52,7 +80,7 @@ def promote(event, expected_sha, artifact_dir, apply=False, root=ROOT):
         source != expected_sha
         or git("rev-parse", f"refs/tags/{tag}^{{commit}}") != source
     ):
-        raise ValueError("The checkout, immutable release tag and event SHA must agree")
+        raise ValueError("The checkout, release tag and selected source SHA must agree")
     if git("status", "--porcelain", "--untracked-files=no"):
         raise ValueError("Directory promotion requires a clean checkout")
     plugin = json.loads((root / "plugin.json").read_text())
@@ -88,6 +116,20 @@ def promote(event, expected_sha, artifact_dir, apply=False, root=ROOT):
     for name, digest in artifacts.items():
         if hashlib.sha256((artifact_dir / name).read_bytes()).hexdigest() != digest:
             raise ValueError("Prepared release archive checksum mismatch")
+
+    release = read_release(tag)
+    if (
+        not isinstance(release, dict)
+        or release.get("tagName") != tag
+        or release.get("isDraft") is not False
+        or type(release.get("isPrerelease")) is not bool
+        or not release.get("publishedAt")
+    ):
+        raise ValueError("A matching published GitHub release candidate is required")
+    if apply and release["isPrerelease"]:
+        raise ValueError(
+            "Mark the verified candidate stable before applying directory promotion"
+        )
 
     git("fetch", "--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main")
     tags = dict(
@@ -155,6 +197,8 @@ def main():
                 args.expected_sha,
                 args.artifact_dir,
                 args.apply,
+                event_name=os.environ.get("GITHUB_EVENT_NAME"),
+                workflow_ref=os.environ.get("GITHUB_REF"),
             ),
             indent=2,
         )
