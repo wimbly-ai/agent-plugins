@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "wimbly",
-  "version": "0.1.5",
-  "description": "Wimbly is a Growth engine for legal and financial services.",
+  "version": "0.1.6",
+  "description": "Find warm introductions and prepare business-development work for legal and financial-services professionals.",
   "author": {
     "name": "Wimbly, Inc.",
     "email": "founders@wimbly.ai",
@@ -16,13 +16,14 @@
       "onboardingSkill": "./skills/onboarding/SKILL.md",
       "interface": {
         "displayName": "Wimbly",
-        "shortDescription": "Growth engine",
-        "longDescription": "Wimbly is a Growth engine for legal and financial services. This repository contains its plugin for agents.\n\nConnect your Wimbly account to use its tools from your agent. The onboarding skill checks setup progress and guides the remaining steps on Wimbly’s website.",
+        "shortDescription": "Find warm introductions",
+        "longDescription": "Wimbly helps partners at legal and financial-services firms turn their professional relationships into new business. Connect your Wimbly account to find people, explore warm introduction paths, research prospects and prepare business-development materials from your authorized Wimbly data.\n\nThe onboarding skill checks your account setup and shows the next required step: connect a mailbox, connect LinkedIn or request your archive, review your profile and review your ideal clients. In supported chat apps, an interactive card tracks your progress and helps repair a lapsed connection.\n\nAn enrolled Wimbly account is required. You control which accounts you connect. Requests stay within the signed-in account and Wimbly’s permissions and usage allowances. The plugin does not bypass mailbox permissions or outreach review and approval.",
         "developerName": "Wimbly, Inc.",
         "category": "Productivity",
         "capabilities": [
-          "Read",
-          "Write"
+          "Guide account setup",
+          "Find people and warm paths",
+          "Prepare business-development work"
         ],
         "websiteURL": "https://www.wimbly.ai",
         "supportURL": "https://www.wimbly.ai/contact",
@@ -40,7 +41,7 @@
         "countries": [
           "US"
         ],
-        "release_notes": "Show the onboarding card in MCP Apps hosts; keep trusted step links in text clients. All initial setup steps remain required."
+        "release_notes": "Clarify Wimbly’s business-development purpose, account requirements and permissions in the directory listing. Keep the existing onboarding skill, icons and production MCP connection."
       },
       "review": {
         "test_cases": {
