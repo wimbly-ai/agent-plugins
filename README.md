@@ -1,7 +1,8 @@
 # Wimbly
 
-Growth engine for legal and financial services. Connect your Wimbly account to
-use its tools and guided onboarding in your agent.
+Find warm introductions and prepare business-development work for legal and
+financial-services professionals. Connect your Wimbly account to use its tools
+and guided onboarding in your agent.
 
 ## Install
 
